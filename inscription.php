@@ -13,17 +13,36 @@ if (isset($_POST['inscription'])) {
   } else {
 
     require_once 'include/base_de_donne.php';
+    
+    $requete1 = $my_base_de_donne->prepare('SELECT * FROM tables_membres WHERE username = :username');
+    $requete1->bindValue(':username', $_POST['username']);
+    $requete1->execute();
+    $result1 = $requete1->fetch();
+
+    $requete2 = $my_base_de_donne->prepare('SELECT * FROM tables_membres WHERE email = :email');
+    $requete2->bindValue(':email', $_POST['email']);
+    $requete2->execute();
+    $result2 = $requete2->fetch();
+
+    if($result1){
+      $message = 'Le username existe déja';
+    }elseif($result2){
+      $message = 'L\'email existe déja';
+    }else {
+
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+
     $requete = $my_base_de_donne->prepare('INSERT INTO tables_membres(username,email,password) VALUES
      (:username,:email,:password) ');
 
     $requete->bindValue(':username', $_POST['username']);
     $requete->bindValue(':email', $_POST['email']);
-    $requete->bindValue(':password', $_POST['password']);
+    $requete->bindValue(':password', $password);
 
     $requete->execute();
     $message = "Tout est bien";
   }
+}
 }
 
 ?>
