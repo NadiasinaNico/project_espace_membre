@@ -13,7 +13,7 @@ if (isset($_POST['inscription'])) {
   } else {
 
     require_once 'include/base_de_donne.php';
-    
+
     $requete1 = $my_base_de_donne->prepare('SELECT * FROM tables_membres WHERE username = :username');
     $requete1->bindValue(':username', $_POST['username']);
     $requete1->execute();
@@ -24,25 +24,63 @@ if (isset($_POST['inscription'])) {
     $requete2->execute();
     $result2 = $requete2->fetch();
 
-    if($result1){
+    if ($result1) {
       $message = 'Le username existe déja';
-    }elseif($result2){
+    } elseif ($result2) {
       $message = 'L\'email existe déja';
-    }else {
+    } else {
 
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+      function token_random_string($token_random = 20)
+      {
+        $token_str = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $token = '';
+        for ($i = 0; $i < $token_random; $i++) {
+          $token .= $token_str[rand(0, strlen($token_str) - 1)];
+        }
+      }
+      $token = token_random_string(20);
 
-    $requete = $my_base_de_donne->prepare('INSERT INTO tables_membres(username,email,password) VALUES
-     (:username,:email,:password) ');
+      $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-    $requete->bindValue(':username', $_POST['username']);
-    $requete->bindValue(':email', $_POST['email']);
-    $requete->bindValue(':password', $password);
+      $requete = $my_base_de_donne->prepare('INSERT INTO tables_membres(username,email,password,token) VALUES
+     (:username,:email,:password,:token) ');
 
-    $requete->execute();
-    $message = "Tout est bien";
+      $requete->bindValue(':username', $_POST['username']);
+      $requete->bindValue(':email', $_POST['email']);
+      $requete->bindValue(':password', $password);
+      $requete->bindValue(':token', $token);
+
+      $requete->execute();
+
+
+      require('PHPMailer/PHPMailerAutoload.php');
+
+      $mail = new PHPMailer();
+
+      $mail->isSMTP();
+      $mail->Host = 'smtp.gmail.com';
+      $mail->SMTPAuth = true;
+      $mail->Username = 'nadiasinanico46@gmail.com';
+      $mail->Password = 'Aslandonance1313';
+      $mail->SMTPSecure = 'tls';
+      $mail->Port = 587;
+
+      $mail->setFrom('nadiasinanicodev@gmail.com', 'Nadiasina');
+      $mail->addAddress($_POST('email'));
+      $mail->isHTML(true);
+      $mail->Subject = 'Confiramation d\'email';
+      $mail->Body = 'Afin de valider votre addresse email, merci de cliquer sur le lien suivant :
+      <a href="http://localhost/project_espace_membres/verification.php?email= '.$_POST['email'].'&token='.$token.'">Confirmer</a>';
+
+      if (!$mail->send()) {
+        $message =  "Mail non envoyé";
+        echo '<br>';
+        echo 'Erreurs: ' . $mail->ErrorInfo;
+      } else {
+        $message =  "Votre email a bien été envoyé";
+      }
+    }
   }
-}
 }
 
 ?>
